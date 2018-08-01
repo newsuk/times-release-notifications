@@ -15,7 +15,8 @@ Within TeamCity (or other CI tool of your choice), create a script step after
 deployment has been completed which calls the following:
 
 ```
-curl -sSL https://raw.githubusercontent.com/newsuk/times-release-notifications/master/slackbot.sh | bash -s
+curl -H "Authorization: token $GITHUB_TOKEN_RELEASE" \
+  -sSL https://raw.githubusercontent.com/newsuk/times-release-notifications/master/slackbot.sh | bash -s
 ```
 
 You also need to ensure the following environment variables are set up:
@@ -24,13 +25,16 @@ You also need to ensure the following environment variables are set up:
 * `GIT_HASH` - The commit hash of the build, must be tagged!
 * `PROJECT_NAME` - The project name
 * `RELEASED_BY` - The user who released
-* `SLACK_WEBHOOK_URL` - The slack webhook url for the appropriate channel to post to
+* `SLACK_URL_RELEASE` - The slack webhook url for the appropriate channel to post to
+* `GITHUB_TOKEN_RELEASE` - The GitHub personal access token with read access to this repo!
 
 
 ### TeamCity
 
 For TeamCity, use the following as a guide to how to set up the environment
-variables.  This will vary from project to project.
+variables.
+
+These will vary from project to project:
 
 ```
 GIT_REPO_URL      %dep.<Project>.vcsroot.url%
@@ -38,6 +42,9 @@ GIT_HASH          %dep.<Project>.build.vcs.number%
 PROJECT_NAME      %dep.<Project>.system.teamcity.projectName%
 RELEASED_BY       %teamcity.build.triggeredBy%
 ```
+
+The `GITHUB_TOKEN_RELEASE` personal access token should already be set up as a
+project root parameter in TeamCity from the `tools-user`.
 
 
 ### Slack Webhook URL
