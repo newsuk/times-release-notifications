@@ -71,7 +71,7 @@ PROJECT_NAME      %dep.<Project>.system.teamcity.projectName%
 RELEASED_BY       %teamcity.build.triggeredBy%
 ```
 
-NOTE: If you configure `GIT_TOKEN` please note this is equivalent to a github passwords. When you set up the environment variable in TeamCity make sure it it set as display "hidden" and type "password"
+NOTE: If you configure `RELEASE_BOT_TOKEN` please note this is equivalent to a github passwords. When you set up the environment variable in TeamCity make sure it it set as display "hidden" and type "password"
 
 ![git-envparam-password](doc/git-envparam-password.png "git-envparam-password")
 
