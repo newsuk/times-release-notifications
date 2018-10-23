@@ -4,9 +4,9 @@
 # Expects the following environment variables to be available:
 #  * GIT_REPO_URL      The git repository URL (e.g. git@github.com:newsuk/project.git)
 #  * GIT_HASH          The commit hash of the build, must be tagged!
-#  * GIT_TOKEN         The git token for git api
 #  * PROJECT_NAME      The project name
 #  * RELEASED_BY       The user who released
+#  * RELEASE_BOT_TOKEN Slackbot token to access git api
 #  * SLACK_URL_RELEASE The slack webhook url for the appropriate channel to post to
 set -e
 
@@ -83,13 +83,13 @@ echo "SLACK_URL_RELEASE: $SLACK_URL_RELEASE"
 # Lookup the tag from the git commit hash used
 tag=$(git ls-remote "$GIT_REPO_URL" | grep "$GIT_HASH" | grep 'refs/tags/' | sed 's|.*refs/tags/||' | sed 's|\^{}||')
 
-releaseId=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$GIT_TOKEN | jq .id)
+releaseId=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .id)
 
 if [ "$GIT_STATUS_RELEASE" = "true" ]; then
     echo "GIT_STATUS_RELEASE:           $GIT_STATUS_RELEASE"
-    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/newsuk/times-public-api/releases/$releaseId?access_token=$GIT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/newsuk/times-public-api/releases/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 else
-    changelog=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$GIT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 fi
 
 echo $changelog

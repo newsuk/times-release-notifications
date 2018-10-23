@@ -25,9 +25,9 @@ You also need to ensure the following environment variables are set up:
 - `RELEASED_BY` - The name of the user who released
 - `SLACK_URL_RELEASE` - The slack webhook url for the appropriate channel to post to
 
-Times Release notification uses git api to retrieve the release notes. If your github repo is private you also need to ensure the following additional environment variable is set
+Times Release Notification uses git api to retrieve the release notes. If your github repo is private you also need to ensure the following additional environment variable is set
 
-- `GIT_TOKEN` - The git access token in order to access github api on a private repo
+- `RELEASE_BOT_TOKEN` - The access token in order to access github api on a private repo
 
 More information about git access token [here](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/)
 
