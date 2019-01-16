@@ -91,7 +91,7 @@ releaseId=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access
 
 if [ "$GIT_STATUS_RELEASE" = "true" ]; then
     echo "GIT_STATUS_RELEASE:           $GIT_STATUS_RELEASE"
-    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/$orgRepo/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/$orgRepo/releases/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 else
     changelog=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 fi
