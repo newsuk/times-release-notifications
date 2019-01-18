@@ -73,23 +73,27 @@ while [ "$1" != "" ]; do
     shift
 done
 
+# Extract the organisation/repository from the repository url
+orgRepo=$(echo $GIT_REPO_URL | sed 's/https:\/\///g' | sed 's/github.com\///g' | sed 's/.git//g' | sed 's/github.com://g')
+
 # Debug dump
 echo "GIT_REPO_URL:      $GIT_REPO_URL"
 echo "GIT_HASH:          $GIT_HASH"
 echo "PROJECT_NAME:      $PROJECT_NAME"
 echo "RELEASED_BY:       $RELEASED_BY"
 echo "SLACK_URL_RELEASE: $SLACK_URL_RELEASE"
+echo "Organisation/Repo: $orgRepo"
 
 # Lookup the tag from the git commit hash used
 tag=$(git ls-remote "$GIT_REPO_URL" | grep "$GIT_HASH" | grep 'refs/tags/' | sed 's|.*refs/tags/||' | sed 's|\^{}||')
 
-releaseId=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .id)
+releaseId=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .id)
 
 if [ "$GIT_STATUS_RELEASE" = "true" ]; then
     echo "GIT_STATUS_RELEASE:           $GIT_STATUS_RELEASE"
-    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/newsuk/times-public-api/releases/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/$orgRepo/releases/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 else
-    changelog=$(curl https://api.github.com/repos/newsuk/times-public-api/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
 fi
 
 echo $changelog
