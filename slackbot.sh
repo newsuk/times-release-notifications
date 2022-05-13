@@ -81,7 +81,7 @@ echo "GIT_REPO_URL:      $GIT_REPO_URL"
 echo "GIT_HASH:          $GIT_HASH"
 echo "PROJECT_NAME:      $PROJECT_NAME"
 echo "RELEASED_BY:       $RELEASED_BY"
-echo "SLACK_URL_RELEASE: SLACK_URL_RELEASE"
+echo "SLACK_URL_RELEASE: $SLACK_URL_RELEASE"
 echo "Organisation/Repo: $orgRepo"
 
 # Lookup the tag from the git commit hash used
