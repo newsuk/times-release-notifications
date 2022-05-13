@@ -87,16 +87,16 @@ echo "Organisation/Repo: $orgRepo"
 # Lookup the tag from the git commit hash used
 tag=$(git ls-remote "$GIT_REPO_URL" | grep "$GIT_HASH" | grep 'refs/tags/' | sed 's|.*refs/tags/||' | sed 's|\^{}||')
 
-releaseId=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .id)
+releaseId=$(curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token $RELEASE_BOT_TOKEN" https://api.github.com/repos/$orgRepo/releases/tags/$tag| jq .id)
 
 if [ "$GIT_STATUS_RELEASE" = "true" ]; then
-    echo "GIT_STATUS_RELEASE:           $GIT_STATUS_RELEASE"
-    changelog=$(curl --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/$orgRepo/releases/$releaseId?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
+    echo "GIT_STATUS_RELEASE: $GIT_STATUS_RELEASE"
+    changelog=$(curl -H "Accept: application/vnd.github.v3+json"  -H "Authorization: token  $RELEASE_BOT_TOKEN"  --data '{"prerelease": false}' -X PATCH https://api.github.com/repos/$orgRepo/releases/$releaseId | jq .body | sed -e 's/"//g')
 else
-    changelog=$(curl https://api.github.com/repos/$orgRepo/releases/tags/$tag?access_token=$RELEASE_BOT_TOKEN | jq .body | sed -e 's/"//g')
+    changelog=$(curl -H "Accept: application/vnd.github.v3+json"  -H "Authorization: token  $RELEASE_BOT_TOKEN" https://api.github.com/repos/$orgRepo/releases/tags/$tag | jq .body | sed -e 's/"//g')
 fi
 
-echo $changelog
+echo "Changelog: $changelog"
 
 # Create a URL to the tag (or commit if no tag)
 githubUrl=$(echo "$GIT_REPO_URL" | sed 's|^.*@\(.*\):\(.*\).git$|https://\1/\2|')
