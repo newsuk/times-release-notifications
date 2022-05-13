@@ -7,7 +7,7 @@
 #  * PROJECT_NAME      The project name
 #  * RELEASED_BY       The user who released
 #  * RELEASE_BOT_TOKEN Slackbot token to access git api
-#  * SLACK_URL_RELEASE The slack webhook url for the appropriate channel to post to
+#  * SLACK_URL_RELEASE One or more slack webhook urls for the appropriate channel to post to, split by comma
 set -e
 
 function usage()
@@ -31,7 +31,7 @@ function usage()
     echo "\tThe user who released"
     echo ""
     echo "\t--slack-url-release"
-    echo "\tThe slack webhook url for the appropriate channel to post to"
+    echo "\tOne or more slack webhook urls for the appropriate channel to post to, split by comma"
     echo ""
     echo "\t--release"
     echo "\tPatches the github release status from prelrelease to release"
@@ -81,7 +81,7 @@ echo "GIT_REPO_URL:      $GIT_REPO_URL"
 echo "GIT_HASH:          $GIT_HASH"
 echo "PROJECT_NAME:      $PROJECT_NAME"
 echo "RELEASED_BY:       $RELEASED_BY"
-echo "SLACK_URL_RELEASE: $SLACK_URL_RELEASE"
+echo "SLACK_URL_RELEASE: SLACK_URL_RELEASE"
 echo "Organisation/Repo: $orgRepo"
 
 # Lookup the tag from the git commit hash used
@@ -111,4 +111,10 @@ fi
 format='{"attachments":[{"author_name": "Released by: %s", "title": "%s", "text": "Version %s has been released\n%s\n\n%s"}]}'
 data=$(printf "$format" "$RELEASED_BY" "$PROJECT_NAME" "$tag" "$releaseUrl" "$changelog")
 
-curl -X POST -H 'Content-type: application/json' --data "$data" "$SLACK_URL_RELEASE"
+urls=(${SLACK_URL_RELEASE//,/ })
+
+for slack_url in "${urls[@]}"
+do
+      curl -X POST -H 'Content-type: application/json' --data "$data" "$slack_url"
+done
+
