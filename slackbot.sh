@@ -108,7 +108,7 @@ else
 fi
 
 # Format and send slack webhook
-format='{"attachments":[{"author_name": "Released by: %s", "title": "%s", "text": "Version %s has been released\n%s\n\n%s"}]}'
+format='{"attachments":[{"author_name": "Released by: %s", "title": "%s", "text": "Version %s has been released\n%s\n\n%.3850s"}]}'
 data=$(printf "$format" "$RELEASED_BY" "$PROJECT_NAME" "$tag" "$releaseUrl" "$changelog")
 
 urls=(${SLACK_URL_RELEASE//,/ })
