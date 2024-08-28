@@ -21,6 +21,9 @@ Examples:
 """
 
 import os
+import re
+from urllib.parse import urlparse
+
 import requests
 import json
 import subprocess
@@ -163,6 +166,23 @@ def build_message(project_name, released_by, git_hash, commit_author, changelog)
 
     return message
 
+def extract_org_repo(git_repo_url):
+    """
+    Extracts the organization and repository name from the given git URL.
+    Handles both SSH and HTTPS URLs.
+    """
+    parsed_url = urlparse(git_repo_url)
+
+    if parsed_url.scheme in ['http', 'https']:
+        org_repo = parsed_url.path.lstrip('/')
+    else:  # handling git@github.com:org/repo.git
+        match = re.match(r'git@(.*):(.*)', git_repo_url)
+        if match:
+            org_repo = match.group(2)
+        else:
+            raise ValueError("Invalid git repository URL format")
+
+    return org_repo.replace('.git', '')
 
 def notify_release(git_repo_url, git_hash, project_name, released_by, release_bot_token, slack_urls):
     """
@@ -179,7 +199,7 @@ def notify_release(git_repo_url, git_hash, project_name, released_by, release_bo
     Raises:
         requests.exceptions.RequestException: If the request fails.
     """
-    org_repo = git_repo_url.split(':')[1].replace('.git', '')
+    org_repo = extract_org_repo(git_repo_url)
 
     tag = get_tag_for_commit(git_repo_url, git_hash)
     changelog = []
