@@ -14,7 +14,7 @@ Usage:
 [--dump-release-info=<file_path>]
 
 Examples:
-    python notify_release.py --git-repo-url=https://github.com/example/repo.git \
+    python slackbot.py --git-repo-url=https://github.com/example/repo.git \
 --git-hash=abc123 --project-name=ProjectX --released-by=username \
 --release-bot-token=token123 --slack-url-release=https://hooks.slack.com/services/XXX,https://hooks.slack.com/services/YYY \
 --dump-release-info=/path/to/release_info.json
