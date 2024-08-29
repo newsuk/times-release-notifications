@@ -19,7 +19,7 @@ Examples:
 --release-bot-token=token123 --slack-url-release=https://hooks.slack.com/services/XXX,https://hooks.slack.com/services/YYY \
 --dump-release-info=/path/to/release_info.json
 """
-
+import logging
 import os
 import re
 from urllib.parse import urlparse
@@ -29,6 +29,10 @@ import json
 import subprocess
 import argparse
 import sys
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 def execute_shell_command(command):
@@ -44,10 +48,12 @@ def execute_shell_command(command):
     Raises:
         RuntimeError: If the command fails.
     """
+    logger.info(f"Executing command: {command}")
     try:
         result = subprocess.check_output(command, shell=True)
         return result.decode('utf-8').strip()
     except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to execute command: {command}, error: {e}")
         raise RuntimeError(f"Failed to execute command: {e}")
 
 
@@ -62,6 +68,7 @@ def get_tag_for_commit(repo_url, commit_hash):
     Returns:
         str: The tag name if found, else None.
     """
+    logger.info(f"Getting tag for commit {commit_hash} in repo {repo_url}")
     command = f"git ls-remote {repo_url}"
     result = execute_shell_command(command)
 
@@ -70,7 +77,10 @@ def get_tag_for_commit(repo_url, commit_hash):
         if commit_hash in line and 'refs/tags/' in line:
             parts = line.split('refs/tags/')
             if len(parts) > 1:
-                return parts[1].replace("^{}", "")
+                tag = parts[1].replace("^{}", "")
+                logger.info(f"Found tag '{tag}' for commit {commit_hash}")
+                return tag
+    logger.warning(f"No tag found for commit {commit_hash}")
     return None
 
 
@@ -88,9 +98,11 @@ def get_release_info_by_tag(org_repo, tag, token):
     """
     headers = {'Accept': 'application/vnd.github.v3+json', 'Authorization': f'token {token}'}
     api_url = f"https://api.github.com/repos/{org_repo}/releases/tags/{tag}"
+    logger.info(f"Getting release info for tag {tag} from {api_url}")
 
     response = requests.get(api_url, headers=headers)
     response.raise_for_status()
+    logger.info(f"Received release info for tag {tag}")
     return response.json()
 
 
@@ -107,10 +119,13 @@ def get_commit_info(repo_url, commit_hash, token):
         dict: The commit information.
     """
     headers = {'Accept': 'application/vnd.github.v3+json', 'Authorization': f'token {token}'}
-    api_url = f"https://api.github.com/repos/{repo_url.split(':')[1].replace('.git', '')}/commits/{commit_hash}"
+    org_repo = extract_org_repo(repo_url)
+    api_url = f"https://api.github.com/repos/{org_repo}/commits/{commit_hash}"
+    logger.info(f"Getting commit info for commit {commit_hash} from {api_url}")
 
     response = requests.get(api_url, headers=headers)
     response.raise_for_status()
+    logger.info(f"Received commit info for commit {commit_hash}")
     return response.json()
 
 
@@ -127,9 +142,11 @@ def send_slack_notification(webhook_url, message):
     """
     headers = {'Content-Type': 'application/json'}
     payload = {'text': message}
+    logger.info(f"Sending Slack notification to {webhook_url}")
 
     response = requests.post(webhook_url, headers=headers, data=json.dumps(payload))
     response.raise_for_status()
+    logger.info(f"Successfully sent Slack notification")
 
 
 def build_message(project_name, released_by, git_hash, commit_author, changelog):
@@ -146,6 +163,7 @@ def build_message(project_name, released_by, git_hash, commit_author, changelog)
     Returns:
         str: The formatted Slack message.
     """
+    logger.info(f"Building Slack message for project {project_name}")
     message = (
         f"*Release Notification:*\n"
         f"*Project:* {project_name}\n"
@@ -163,14 +181,16 @@ def build_message(project_name, released_by, git_hash, commit_author, changelog)
             message += f"{change}\n"
 
     message += "```"  # Close the code block
-
+    logger.info("Slack message built successfully")
     return message
+
 
 def extract_org_repo(git_repo_url):
     """
     Extracts the organization and repository name from the given git URL.
     Handles both SSH and HTTPS URLs.
     """
+    logger.info(f"Extracting organization and repository from URL {git_repo_url}")
     parsed_url = urlparse(git_repo_url)
 
     if parsed_url.scheme in ['http', 'https']:
@@ -180,9 +200,42 @@ def extract_org_repo(git_repo_url):
         if match:
             org_repo = match.group(2)
         else:
+            logger.error("Invalid git repository URL format")
             raise ValueError("Invalid git repository URL format")
 
-    return org_repo.replace('.git', '')
+    org_repo = org_repo.replace('.git', '')
+    logger.info(f"Extracted organization and repository: {org_repo}")
+    return org_repo
+
+
+def dump_release_info(git_repo_url, git_hash, release_bot_token, output_file):
+    """
+    Dump the release information to a file.
+
+    Args:
+        git_repo_url (str): The git repository URL.
+        git_hash (str): The commit hash of the build.
+        release_bot_token (str): The GitHub token for authentication.
+        output_file (str): The file path to dump the release information.
+    """
+    logger.info(f"Dumping release info for {git_hash} into {output_file}")
+    org_repo = extract_org_repo(git_repo_url)
+
+    tag = get_tag_for_commit(git_repo_url, git_hash)
+    release_info = get_release_info_by_tag(org_repo, tag, release_bot_token) if tag else {}
+
+    if not release_info:
+        commit_info = get_commit_info(git_repo_url, git_hash, release_bot_token)
+        release_info = {
+            'commit': commit_info,
+            'message': commit_info['commit']['message'],
+            'author': commit_info['commit']['author']['name']
+        }
+
+    with open(output_file, 'w') as file:
+        json.dump(release_info, file, indent=4)
+    logger.info(f"Release info dumped to {output_file}")
+
 
 def notify_release(git_repo_url, git_hash, project_name, released_by, release_bot_token, slack_urls):
     """
@@ -199,6 +252,7 @@ def notify_release(git_repo_url, git_hash, project_name, released_by, release_bo
     Raises:
         requests.exceptions.RequestException: If the request fails.
     """
+    logger.info(f"Starting release notification for project {project_name}")
     org_repo = extract_org_repo(git_repo_url)
 
     tag = get_tag_for_commit(git_repo_url, git_hash)
@@ -220,32 +274,7 @@ def notify_release(git_repo_url, git_hash, project_name, released_by, release_bo
     for url in slack_urls:
         send_slack_notification(url, message)
 
-
-def dump_release_info(git_repo_url, git_hash, release_bot_token, output_file):
-    """
-    Dump the release information to a file.
-
-    Args:
-        git_repo_url (str): The git repository URL.
-        git_hash (str): The commit hash of the build.
-        release_bot_token (str): The GitHub token for authentication.
-        output_file (str): The file path to dump the release information.
-    """
-    org_repo = git_repo_url.split(':')[1].replace('.git', '')
-
-    tag = get_tag_for_commit(git_repo_url, git_hash)
-    release_info = get_release_info_by_tag(org_repo, tag, release_bot_token) if tag else {}
-
-    if not release_info:
-        commit_info = get_commit_info(git_repo_url, git_hash, release_bot_token)
-        release_info = {
-            'commit': commit_info,
-            'message': commit_info['commit']['message'],
-            'author': commit_info['commit']['author']['name']
-        }
-
-    with open(output_file, 'w') as file:
-        json.dump(release_info, file, indent=4)
+    logger.info(f"Release notification for project {project_name} completed successfully")
 
 
 def main():
@@ -272,21 +301,24 @@ def main():
 
     slack_urls = args.slack_url_release.split(',')
 
-    notify_release(args.git_repo_url, args.git_hash, args.project_name, args.released_by, args.release_bot_token,
-                   slack_urls)
+    logger.info("Starting main process")
+    try:
+        notify_release(args.git_repo_url, args.git_hash, args.project_name, args.released_by, args.release_bot_token,
+                       slack_urls)
 
-    if args.dump_release_info:
-        dump_release_info(args.git_repo_url, args.git_hash, args.release_bot_token, args.dump_release_info)
+        if args.dump_release_info:
+            dump_release_info(args.git_repo_url, args.git_hash, args.release_bot_token, args.dump_release_info)
+
+        logger.info("Main process completed successfully")
+        sys.exit(0)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network Error: {str(e)}")
+    except ValueError as e:
+        logger.error(f"Value Error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected Error: {str(e)}")
+    sys.exit(1)
 
 
 if __name__ == '__main__':
-    try:
-        main()
-        sys.exit(0)
-    except requests.exceptions.RequestException as e:
-        print(f"Network Error: {str(e)}")
-    except ValueError as e:
-        print(f"Value Error: {str(e)}")
-    except Exception as e:
-        print(f"Unexpected Error: {str(e)}")
-    sys.exit(1)
+    main()

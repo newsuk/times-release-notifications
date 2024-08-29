@@ -4,7 +4,7 @@ import subprocess
 import requests
 
 # Assuming the script is named `slackbot.py` and all functions are imported
-from slackbot import (
+from tool.slackbot import (
     execute_shell_command,
     get_tag_for_commit,
     get_release_info_by_tag,
@@ -120,10 +120,10 @@ class TestSlackBotRelease(unittest.TestCase):
         )
         self.assertEqual(result, expected_message)
 
-    @patch('slackbot.get_tag_for_commit')
-    @patch('slackbot.get_release_info_by_tag')
-    @patch('slackbot.send_slack_notification')
-    @patch('slackbot.get_commit_info')
+    @patch('tool.slackbot.get_tag_for_commit')
+    @patch('tool.slackbot.get_release_info_by_tag')
+    @patch('tool.slackbot.send_slack_notification')
+    @patch('tool.slackbot.get_commit_info')
     def test_slackbot(self, mock_get_commit_info, mock_send_slack_notification, mock_get_release_info_by_tag,
                             mock_get_tag_for_commit):
         mock_get_tag_for_commit.return_value = "v1.0.0"
