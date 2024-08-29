@@ -146,7 +146,7 @@ def send_slack_notification(webhook_url, message):
 
     response = requests.post(webhook_url, headers=headers, data=json.dumps(payload))
     response.raise_for_status()
-    logger.info(f"Successfully sent Slack notification")
+    logger.info("Successfully sent Slack notification")
 
 
 def build_message(project_name, released_by, git_hash, commit_author, changelog):
