@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: times-release-notifications
+  description: Component for times-release-notifications
+  annotations:
+    circleci.com/project-slug: github/newsuk/times-release-notifications
+    backstage.io/source-location: url:https://github.com/newsuk/times-release-notifications/
+    github.com/team-slug: newsuk/times-release-notifications
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/productivity-hub-metrics-enabled: 'true'
+  tags:
+    - bu:newsuk
+spec:
+  type: service
+  lifecycle: production
+  
